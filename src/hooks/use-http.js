@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import axios from "axios";
 
 const useHttp = () => {
   const [error, setError] = useState(null);
@@ -6,23 +7,20 @@ const useHttp = () => {
   const sendRequest = useCallback(async (requestConfig, dataHandler) => {
     setError(null);
     try {
-      const response = await fetch(requestConfig.url, {
-        method: requestConfig.method ? requestConfig.method : "GET",
-        headers: requestConfig.headers
-          ? requestConfig.headers
-          : {
-              "Content-Type": "application/JSON",
-            },
-        body: requestConfig.body ? JSON.stringify(requestConfig.body) : null,
+      const response = await axios({
+        method: requestConfig.method || "GET",
+        url: requestConfig.url,
+        headers: requestConfig.headers || {
+          "Content-Type": "application/json",
+        },
+        data: requestConfig.body || null,
       });
-      if (!response.ok) {
-        throw new Error("Request failed");
-      }
 
-      const data = await response.json();
-      dataHandler(data);
+      dataHandler(response.data);
     } catch (err) {
-      setError(err.message || "something went wrong");
+      setError(
+        err.response?.data?.error || err.message || "Something went wrong"
+      );
     }
   }, []);
 

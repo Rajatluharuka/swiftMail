@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Container, Form, Button, Card, Alert } from "react-bootstrap";
 import { useDispatch } from "react-redux";
+import axios from "axios";
 import { authActions } from "../../store/auth-slice";
 import { Link } from "react-router-dom";
 
@@ -26,15 +27,14 @@ const LoginForm = () => {
     setError("");
 
     try {
-      const res = await fetch(
+      const response = await axios.post(
         "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBOEUpZUIvbFfmuHPZ0niHQs5SsPtZaq0c",
         {
-          method: "POST",
-          body: JSON.stringify({
-            email: enteredEmail,
-            password: enteredPassword,
-            returnSecureToken: true,
-          }),
+          email: enteredEmail,
+          password: enteredPassword,
+          returnSecureToken: true,
+        },
+        {
           headers: {
             "Content-Type": "application/json",
           },
@@ -42,21 +42,19 @@ const LoginForm = () => {
       );
 
       setIsLoading(false);
-
-      if (res.ok) {
-        const data = await res.json();
-        dispatch(authActions.login({ token: data.idToken, email: data.email }));
-      } else {
-        const data = await res.json();
-        let errorMsg = "Authentication Failed";
-        if (data && data.error && data.error.message) {
-          errorMsg = data.error.message;
-        }
-        throw new Error(errorMsg);
-      }
+      dispatch(
+        authActions.login({
+          token: response.data.idToken,
+          email: response.data.email,
+        })
+      );
     } catch (err) {
       setIsLoading(false);
-      setError(err.message);
+      const errorMessage =
+        err.response && err.response.data && err.response.data.error.message
+          ? err.response.data.error.message
+          : "Authentication Failed";
+      setError(errorMessage);
     }
   };
 

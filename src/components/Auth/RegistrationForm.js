@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Container, Form, Button, Card, Alert } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import axios from "axios";
 import { authActions } from "../../store/auth-slice";
 
 const RegistrationForm = () => {
@@ -30,15 +31,14 @@ const RegistrationForm = () => {
     setStatusMessage("");
 
     try {
-      const res = await fetch(
+      const response = await axios.post(
         "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBOEUpZUIvbFfmuHPZ0niHQs5SsPtZaq0c",
         {
-          method: "POST",
-          body: JSON.stringify({
-            email: enteredEmail,
-            password: enteredPassword,
-            returnSecureToken: true,
-          }),
+          email: enteredEmail,
+          password: enteredPassword,
+          returnSecureToken: true,
+        },
+        {
           headers: {
             "Content-Type": "application/json",
           },
@@ -46,22 +46,22 @@ const RegistrationForm = () => {
       );
 
       setIsLoading(false);
-
-      if (!res.ok) {
-        const data = await res.json();
-        let errorMsg = "Registration Failed";
-        if (data && data.error && data.error.message) {
-          errorMsg = data.error.message;
-        }
-        throw new Error(errorMsg);
-      }
-
-      const data = await res.json();
       setStatusMessage("Registration Successful!");
-      dispatch(authActions.login({ token: data.idToken, email: data.email }));
+      dispatch(
+        authActions.login({
+          token: response.data.idToken,
+          email: response.data.email,
+        })
+      );
     } catch (error) {
       setIsLoading(false);
-      setStatusMessage(error.message);
+      const errorMessage =
+        error.response &&
+        error.response.data &&
+        error.response.data.error.message
+          ? error.response.data.error.message
+          : "Registration Failed";
+      setStatusMessage(errorMessage);
     }
   };
 
